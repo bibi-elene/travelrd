@@ -107,15 +107,17 @@ export async function updateInvoice(
   redirect('/dashboard/invoices');
 }
 
-export async function deleteInvoice(id: string) {
-  // throw new Error('Failed to Delete Invoice');
+export async function cancelInvoice(id: string) {
+  // throw new Error('Failed to Cancel Invoice');
 
   try {
-    await sql`DELETE FROM invoices WHERE id = ${id}`;
+    await sql`UPDATE invoices 
+    SET status = 'canceled'
+    WHERE id = ${id}`;
     revalidatePath('/dashboard/invoices');
-    return { message: 'Deleted Invoice' };
+    return { message: 'Canceled Invoice' };
   } catch (error) {
-    return { message: 'Database Error: Failed to Delete Invoice.' };
+    return { message: 'Database Error: Failed to Cancel Invoice.' };
   }
 }
 
