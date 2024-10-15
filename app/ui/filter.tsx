@@ -3,22 +3,19 @@
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useDebouncedCallback } from "use-debounce";
 
-const statusList = ["Pending", "Paid", "Canceled", "Overdue"];
+const statusList = ["All", "Pending", "Paid", "Canceled", "Overdue"];
 
 export default function Filter() {
   const searchParams = useSearchParams();
+  const params = new URLSearchParams(searchParams);
   const { replace } = useRouter();
   const pathname = usePathname();
 
-  const handleFilter = useDebouncedCallback((option: string) => {
-    console.log(`Searching... ${option}`);
-
-    const params = new URLSearchParams(searchParams);
-
+  const handleFilter = useDebouncedCallback((term: string) => {
     params.set("page", "1");
 
-    if (option) {
-      params.set("filter", option);
+    if (term && term !== "all") {
+      params.set("query", term);
     } else {
       params.delete("query");
     }
