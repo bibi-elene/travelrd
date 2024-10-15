@@ -54,6 +54,7 @@ const invoices = [
     amount: 15795,
     status: 'pending',
     date: '2022-12-06',
+    due_date: '2022-12-20',
   },
   {
     customer_id: customers[1].id,
