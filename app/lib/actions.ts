@@ -15,7 +15,7 @@ const FormSchema = z.object({
   amount: z.coerce
     .number()
     .gt(0, { message: "Please enter an amount greater than $0." }),
-  status: z.enum(["pending", "paid", "canceled"], {
+  status: z.enum(["pending", "paid", "canceled", "overdue"], {
     invalid_type_error: "Please select an invoice status.",
   }),
   date: z.string(),
@@ -143,5 +143,18 @@ export async function authenticate(
       }
     }
     throw error;
+  }
+}
+
+export async function updateInvoiceStatus(id: string, status: string) {
+  try {
+    await sql`
+      UPDATE invoices
+      SET status = ${status}
+      WHERE id = ${id}
+    `;
+    revalidatePath("/dashboard/invoices");
+  } catch (error) {
+    return { message: "Database Error: Failed to Update Invoice Status." };
   }
 }

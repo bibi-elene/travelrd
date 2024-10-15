@@ -97,7 +97,10 @@ export async function fetchFilteredInvoices(
         invoices.amount,
         invoices.date,
         invoices.due_date,
-        invoices.status,
+        CASE 
+          WHEN invoices.status = 'pending' AND (date::timestamptz + INTERVAL '14 days' < CURRENT_DATE) THEN 'overdue'
+          ELSE invoices.status
+        END AS status,
         customers.name,
         customers.email,
         customers.image_url
