@@ -249,3 +249,18 @@ export async function fetchFilteredInvoicesByStatus(status: string) {
     throw new Error("Failed to fetch invoices by status.");
   }
 }
+
+export async function fetchInvoiceAuditLogs(invoiceId: string) {
+  try {
+    const logs = await sql`
+      SELECT invoice_id, old_status, new_status, changed_by, changed_at, action
+      FROM invoice_audit_logs
+      WHERE invoice_id = ${invoiceId}
+      ORDER BY changed_at DESC
+    `;
+    return logs.rows;
+  } catch (error) {
+    console.error("Database Error: Failed to fetch audit logs.", error);
+    throw new Error("Failed to fetch audit logs.");
+  }
+}

@@ -184,3 +184,33 @@ export async function updateInvoiceStatus(
     return { message: "Database Error: Failed to Update Invoice Status." };
   }
 }
+
+export async function restoreInvoiceStatus(logId: number) {
+  try {
+    const log = await sql`
+      SELECT invoice_id, old_status
+      FROM invoice_audit_logs
+      WHERE id = ${logId}
+    `;
+
+    if (!log || !log.rows.length) {
+      throw new Error("Log not found");
+    }
+
+    const { invoice_id, old_status } = log.rows[0];
+
+    await sql`
+      UPDATE invoices
+      SET status = ${old_status}
+      WHERE id = ${invoice_id}
+    `;
+
+    await sql`
+      INSERT INTO invoice_audit_logs (invoice_id, old_status, new_status, changed_by, action)
+      VALUES (${invoice_id}, ${old_status}, ${old_status}, 'system', 'restored')
+    `;
+  } catch (error) {
+    console.error("Error restoring invoice status:", error);
+    throw new Error("Failed to restore invoice status." + `${error}`);
+  }
+}
