@@ -14,9 +14,11 @@ const statusList = ["Pending", "Paid", "Canceled", "Overdue"];
 export default function InvoiceStatus({
   status,
   id,
+  customerId,
 }: Readonly<{
   status: string;
   id: string;
+  customerId: string;
 }>) {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -25,7 +27,7 @@ export default function InvoiceStatus({
   };
 
   const handleStatusChange = (id: string, item: string) => {
-    updateInvoiceStatus(id, item.toLowerCase());
+    updateInvoiceStatus(id, item.toLowerCase(), customerId);
     handleDropdownOpen();
   };
 

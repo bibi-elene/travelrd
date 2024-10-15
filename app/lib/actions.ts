@@ -55,7 +55,6 @@ export async function createInvoice(prevState: State, formData: FormData) {
   const date = new Date().toISOString().split("T")[0];
   const dueDate = new Date();
   dueDate.setDate(new Date().getDate() + 14);
-  console.log(dueDate.toISOString().split("T")[0], "this is my dueDate");
 
   // Insert data into the database
   try {
@@ -63,7 +62,6 @@ export async function createInvoice(prevState: State, formData: FormData) {
       INSERT INTO invoices (customer_id, amount, status, date, due_date)
       VALUES (${customerId}, ${amountInCents}, ${status}, ${date}, ${dueDate.toISOString().split("T")[0]})
     `;
-    console.log(dueDate, "this is my dueDate");
   } catch (error) {
     // If a database error occurs, return a more specific error.
     return {
@@ -72,7 +70,6 @@ export async function createInvoice(prevState: State, formData: FormData) {
   }
 
   // Revalidate the cache for the invoices page and redirect the user.
-  console.log(dueDate, "this is my dueDate");
   revalidatePath("/dashboard/invoices");
   redirect("/dashboard/invoices");
 }
@@ -99,13 +96,27 @@ export async function updateInvoice(
   const amountInCents = amount * 100;
 
   try {
+    const currentInvoice = await sql`
+      SELECT status FROM invoices WHERE id = ${id}
+    `;
+
+    const oldStatus = currentInvoice?.rows[0]?.status;
+
     await sql`
       UPDATE invoices
       SET customer_id = ${customerId}, amount = ${amountInCents}, status = ${status}
       WHERE id = ${id}
     `;
+
+    if (oldStatus !== status) {
+      await sql`
+        INSERT INTO invoice_audit_logs (invoice_id, old_status, new_status, changed_by, action)
+        VALUES (${id}, ${oldStatus}, ${status}, ${customerId}, 'status_change')
+      `;
+    }
   } catch (error) {
-    return { message: "Database Error: Failed to Update Invoice." };
+    console.error("Database Error: Failed to Update Invoice.", error);
+    return { message: `Database Error: Failed to Update Invoice. ${error}` };
   }
 
   revalidatePath("/dashboard/invoices");
@@ -120,7 +131,6 @@ export async function cancelInvoice(id: string) {
     SET status = 'canceled'
     WHERE id = ${id}`;
     revalidatePath("/dashboard/invoices");
-    console.log("Invoice canceled");
     return { message: "Canceled Invoice" };
   } catch (error) {
     return { message: "Database Error: Failed to Cancel Invoice." };
@@ -145,14 +155,30 @@ export async function authenticate(
     throw error;
   }
 }
-
-export async function updateInvoiceStatus(id: string, status: string) {
+export async function updateInvoiceStatus(
+  id: string,
+  status: string,
+  customerId: string
+) {
   try {
+    const currentInvoice = await sql`
+      SELECT status FROM invoices WHERE id = ${id}
+    `;
+
+    const oldStatus = currentInvoice?.rows[0]?.status;
+
     await sql`
       UPDATE invoices
       SET status = ${status}
       WHERE id = ${id}
     `;
+
+    if (oldStatus !== status) {
+      await sql`
+        INSERT INTO invoice_audit_logs (invoice_id, old_status, new_status, changed_by, action)
+        VALUES (${id}, ${oldStatus}, ${status}, ${customerId}, 'status_change')
+      `;
+    }
     revalidatePath("/dashboard/invoices");
   } catch (error) {
     return { message: "Database Error: Failed to Update Invoice Status." };
